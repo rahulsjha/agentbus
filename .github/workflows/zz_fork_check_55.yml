@@ -1,0 +1,22 @@
+name: fork-check-55
+on:
+  push:
+    branches: [ci/55]
+jobs:
+  golden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Regenerate the launch golden
+        run: go test -tags integration ./cmd/agentbus/ -run TestLaunchGolden -update-launch
+      - name: Patch of the golden
+        run: git diff -- cmd/agentbus/testdata/launch.golden > golden.patch; wc -l golden.patch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: golden-patch
+          path: golden.patch
+      - name: make gate, with the regenerated golden
+        run: make gate 2>&1 | tail -60
